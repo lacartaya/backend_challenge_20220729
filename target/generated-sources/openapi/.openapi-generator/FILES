@@ -1,0 +1,6 @@
+README.md
+pom.xml
+src/main/java/com/celonis/challenge/api/ApiUtil.java
+src/main/java/com/celonis/challenge/api/TasksApi.java
+src/main/java/com/celonis/challenge/api/model/ApiError.java
+src/main/java/com/celonis/challenge/api/model/Task.java
