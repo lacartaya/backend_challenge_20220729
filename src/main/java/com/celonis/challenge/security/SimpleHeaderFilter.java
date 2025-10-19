@@ -20,6 +20,7 @@ public class SimpleHeaderFilter extends OncePerRequestFilter {
     private static final Set<String> EXACT_WHITELIST = Set.of(
             "/swagger-ui.html",
             "/openapi.yaml",
+            "/h2-console",
             "/error"
     );
     private static final String[] PREFIX_WHITELIST = new String[]{
