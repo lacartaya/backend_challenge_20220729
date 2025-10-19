@@ -3,9 +3,9 @@ package com.celonis.challenge.services;
 import com.celonis.challenge.exceptions.InternalException;
 import com.celonis.challenge.exceptions.NotFoundException;
 import com.celonis.challenge.model.ProjectGenerationTask;
-import com.celonis.challenge.model.ProjectGenerationTaskRepository;
-import com.celonis.challenge.model.TaskStatus;
-import com.celonis.challenge.model.TaskType;
+import com.celonis.challenge.repository.ProjectGenerationTaskRepository;
+import com.celonis.challenge.enums.TaskStatusEnum;
+import com.celonis.challenge.enums.TaskTypeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -63,13 +63,13 @@ public class TaskService {
 
         // Valores por defecto para progreso/estado/tipo si existen en la entidad
         if (projectGenerationTask.getStatus() == null) {
-            projectGenerationTask.setStatus(TaskStatus.PENDING);
+            projectGenerationTask.setStatus(TaskStatusEnum.PENDING);
         }
         if (projectGenerationTask.getProgress() == null) {
             projectGenerationTask.setProgress(0);
         }
         if (projectGenerationTask.getType() == null) {
-            projectGenerationTask.setType(TaskType.ZIP_GENERATION);
+            projectGenerationTask.setType(TaskTypeEnum.ZIP_GENERATION);
         }
 
         return projectGenerationTaskRepository.save(projectGenerationTask);
@@ -124,17 +124,17 @@ public class TaskService {
         ProjectGenerationTask task = get(taskId);
 
         // Si ya está corriendo, no arrancar de nuevo
-        if (runningCounters.containsKey(taskId) || task.getStatus() == TaskStatus.RUNNING) {
+        if (runningCounters.containsKey(taskId) || task.getStatus() == TaskStatusEnum.RUNNING) {
             throw new InternalException("Task is already running");
         }
 
         // Configurar como COUNTER e inicializar valores
-        task.setType(TaskType.COUNTER);
+        task.setType(TaskTypeEnum.COUNTER);
         task.setStartValue(x);
         task.setTargetValue(y);
         task.setCurrentValue(x);
         task.setProgress(percentage(x, x, y));
-        task.setStatus(TaskStatus.RUNNING);
+        task.setStatus(TaskStatusEnum.RUNNING);
         projectGenerationTaskRepository.save(task);
 
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
@@ -144,7 +144,7 @@ public class TaskService {
                     cancelFuture(taskId);
                     return;
                 }
-                if (t.getStatus() != TaskStatus.RUNNING) {
+                if (t.getStatus() != TaskStatusEnum.RUNNING) {
                     cancelFuture(taskId);
                     return;
                 }
@@ -155,7 +155,7 @@ public class TaskService {
                 if (cur >= target) {
                     t.setCurrentValue(target);
                     t.setProgress(100);
-                    t.setStatus(TaskStatus.COMPLETED);
+                    t.setStatus(TaskStatusEnum.COMPLETED);
                     projectGenerationTaskRepository.save(t);
                     cancelFuture(taskId);
                     return;
@@ -171,7 +171,7 @@ public class TaskService {
                 // Ante cualquier error, marcar FAILED y limpiar el future
                 ProjectGenerationTask t = projectGenerationTaskRepository.findById(taskId).orElse(null);
                 if (t != null) {
-                    t.setStatus(TaskStatus.FAILED);
+                    t.setStatus(TaskStatusEnum.FAILED);
                     t.setProgress(0);
                     projectGenerationTaskRepository.save(t);
                 }
@@ -197,9 +197,9 @@ public class TaskService {
      */
     public TaskProgressDto cancelCounter(String taskId) {
         ProjectGenerationTask t = get(taskId);
-        if (t.getStatus() == TaskStatus.RUNNING) {
+        if (t.getStatus() == TaskStatusEnum.RUNNING) {
             cancelFuture(taskId);
-            t.setStatus(TaskStatus.CANCELED);
+            t.setStatus(TaskStatusEnum.CANCELED);
             projectGenerationTaskRepository.save(t);
         }
         return toProgressDto(t);
@@ -236,7 +236,7 @@ public class TaskService {
 
     private TaskProgressDto toProgressDto(ProjectGenerationTask t) {
         TaskProgressDto dto = new TaskProgressDto();
-        dto.status  = t.getStatus() == null ? TaskStatus.PENDING.name() : t.getStatus().name();
+        dto.status  = t.getStatus() == null ? TaskStatusEnum.PENDING.name() : t.getStatus().name();
         dto.progress = t.getProgress() == null ? 0 : t.getProgress();
         dto.current  = t.getCurrentValue() == null ? 0 : t.getCurrentValue();
         dto.target   = t.getTargetValue() == null ? 0 : t.getTargetValue();

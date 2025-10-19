@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-19T22:54:46.396694+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-20T01:19:26.360702+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
 @Validated
 @Tag(name = "Tasks", description = "Endpoints to manage and execute project generation tasks.")
 public interface TasksApi {

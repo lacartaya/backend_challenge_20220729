@@ -66,3 +66,199 @@ Canceling a task that is being executed should be possible, in which case the ex
 
 The API can be used to create tasks, but the user is not required to execute those tasks.
 The tasks that are not executed after an extended period (e.g. a week) should be periodically cleaned up (deleted).
+
+# Appendix — Operation, Testing, and References
+
+## 1) How to View the API Documentation (Swagger)
+
+- **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)  
+  You can try all endpoints live there.
+
+- **OpenAPI JSON**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+**Important (Security):** Add the header in each request:  
+
+  Celonis-Auth: totally_secret 
+
+(Swagger allows you to add it in **Authorize** or via **Try it out**).
+
+---
+
+## 2) Main Endpoints
+
+### Base Tasks
+- `GET /api/tasks` — list tasks
+- `POST /api/tasks` — create task
+- `GET /api/tasks/{taskId}` — get by ID
+- `PUT /api/tasks/{taskId}` — update task
+- `DELETE /api/tasks/{taskId}` — delete task
+- `POST /api/tasks/{taskId}/execute` — generate `challenge.zip`
+- `GET /api/tasks/{taskId}/result` — download ZIP
+
+### New Task Type: Counter
+- `POST /api/tasks/{taskId}/counter/start` — start counter `{x,y}`
+- `GET /api/tasks/{taskId}/counter/progress` — progress
+- `POST /api/tasks/{taskId}/counter/cancel` — cancel
+
+---
+
+## 3) Example cURL Commands (all include the auth header)
+
+Replace `<TASK_ID>` with the actual ID returned upon creation.
+
+### 3.1 Create Task
+```bash
+curl -X POST "http://localhost:8080/api/tasks" \
+  -H "Celonis-Auth: totally_secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name": "Test Counter",
+        "description": "Example",
+        "status": "PENDING"
+      }'
+```
+### 3.2 List Tasks
+```bash
+curl -H "Celonis-Auth: totally_secret" \
+  "http://localhost:8080/api/tasks"
+```
+
+### 3.3 Get By Id
+```bash
+curl -H "Celonis-Auth: totally_secret" \
+  "http://localhost:8080/api/tasks/<TASK_ID>"
+```
+
+### 3.4 Update Task
+```bash
+curl -X PUT "http://localhost:8080/api/tasks/<TASK_ID>" \
+  -H "Celonis-Auth: totally_secret" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "New name"}'
+```
+
+### 3.5 Delete Task
+```bash
+curl -X DELETE \
+  -H "Celonis-Auth: totally_secret" \
+  "http://localhost:8080/api/tasks/<TASK_ID>"
+```
+
+### 3.6 Execute (ZIP legacy)
+```bash
+curl -X POST \
+  -H "Celonis-Auth: totally_secret" \
+  "http://localhost:8080/api/tasks/<TASK_ID>/execute"
+```
+
+### 3.7 Download Result (ZIP)
+```bash
+curl -X POST \
+  -H "Celonis-Auth: totally_secret" \
+  "http://localhost:8080/api/tasks/<TASK_ID>/execute"
+```
+
+### 3.8 Start Counter
+```bash
+curl -X POST "http://localhost:8080/api/tasks/<TASK_ID>/counter/start" \
+  -H "Celonis-Auth: totally_secret" \
+  -H "Content-Type: application/json" \
+  -d '{"x": 1, "y": 10}'
+```
+
+### 3.9 Counter Progress
+```bash
+curl -H "Celonis-Auth: totally_secret" \
+  "http://localhost:8080/api/tasks/<TASK_ID>/counter/progress"
+```
+
+### 3.10 Cancel Counter
+```bash
+curl -X POST \
+  -H "Celonis-Auth: totally_secret" \
+  "http://localhost:8080/api/tasks/<TASK_ID>/counter/cancel"
+```
+
+## 4) How to View the H2 Database and Modify Data for Testing
+
+    spring.h2.console.enabled=true
+    spring.h2.console.path=/h2-console
+
+    spring.datasource.url=jdbc:h2:mem:testdb
+    spring.datasource.driver-class-name=org.h2.Driver
+    spring.datasource.username=sa
+    spring.datasource.password=
+
+Start the app and open: http://localhost:8080/h2-console
+
+    Connect with:
+    JDBC URL: jdbc:h2:mem:testdb
+    User: sa
+    Password: (empty)
+
+### Query/edit the table (usually PROJECT_GENERATION_TASK).
+
+    SELECT * FROM PROJECT_GENERATION_TASK ORDER BY CREATION_DATE DESC;
+
+Simulate an old (10 days) PENDING task:
+
+    UPDATE PROJECT_GENERATION_TASK
+    SET CREATION_DATE = DATEADD('DAY', -10, CURRENT_TIMESTAMP())
+    WHERE STATUS = 'PENDING';
+
+## 5) Test the Cleanup Job (Task 3)
+
+The job periodically deletes unexecuted tasks (e.g., PENDING) older than 7 days.
+Controlled by properties:
+
+    # Enable/disable
+    tasks.cleanup.enabled=true
+    # Retention days for PENDING
+    tasks.cleanup.retention-days=7
+    # Cron: default every day at 03:00
+    tasks.cleanup.cron=0 0 3 * * *
+
+
+🔁 Workaround to test every 15s
+
+Option A (temporary, in code): change job annotation to fixedDelay:
+
+    // In TaskCleanupJob
+    @Scheduled(fixedDelay = 15000) // every 15s after the previous execution finishes
+    public void cleanupOldPendingTasks() { ... }
+
+
+Option B (without changing code): keep @Scheduled(cron = "${tasks.cleanup.cron:...}")
+and set in application.properties a cron every minute, e.g. at second 0 and 30:
+
+    tasks.cleanup.cron=0,30 * * * * *
+
+How to verify:
+
+Mark a PENDING task with CREATION_DATE 10 days ago (see SQL above).
+
+Wait for the job trigger and check logs; you’ll see something like:
+
+CleanupJob: deleted 1 pending tasks older than 7 days (0 temp files removed).
+
+
+## 6)  Where ZIP Files Are Stored and How They Are Downloaded
+
+When executing /api/tasks/{taskId}/execute, challenge.zip (included in src/main/resources) is copied to a temp file and its absolute path is stored in the entity’s storageLocation.
+
+GET /api/tasks/{taskId}/result returns the file with:
+
+Content-Disposition: attachment; filename=challenge.zip
+
+
+If it does not exist, response is:
+
+File not generated yet
+
+## 7)  Quick Notes
+
+All endpoints require header: Celonis-Auth: totally_secret (validated by a simple filter).
+
+The counter runs in background using ScheduledExecutorService; you can cancel live with /counter/cancel.
+
+The cleanup job ignores RUNNING/COMPLETED tasks; if you want to also clean completed ones after X days, add another search/retention logic.

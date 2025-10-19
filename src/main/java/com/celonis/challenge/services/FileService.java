@@ -2,7 +2,8 @@ package com.celonis.challenge.services;
 
 import com.celonis.challenge.exceptions.InternalException;
 import com.celonis.challenge.exceptions.NotFoundException;
-import com.celonis.challenge.model.ProjectGenerationTaskRepository;
+import com.celonis.challenge.repository.ProjectGenerationTaskRepository;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
@@ -12,16 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
-import java.net.URL;
 
+@RequiredArgsConstructor
 @Component
 public class FileService {
 
     private final ProjectGenerationTaskRepository projectGenerationTaskRepository;
-
-    public FileService(ProjectGenerationTaskRepository projectGenerationTaskRepository) {
-        this.projectGenerationTaskRepository = projectGenerationTaskRepository;
-    }
 
     public ResponseEntity<FileSystemResource> getTaskResult(String taskId) {
         final var projectGenerationTask = projectGenerationTaskRepository.findById(taskId)

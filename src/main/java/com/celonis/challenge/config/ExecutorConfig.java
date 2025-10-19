@@ -8,9 +8,12 @@ import java.util.concurrent.ScheduledExecutorService;
 
 @Configuration
 public class ExecutorConfig {
+    /**
+     * Pool share between all the task
+     * @return ScheduledExecutorService
+     */
     @Bean(destroyMethod = "shutdownNow")
     public ScheduledExecutorService scheduledExecutorService() {
-        // pool compartido para todas las tareas
         return Executors.newScheduledThreadPool(4);
     }
 }
