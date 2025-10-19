@@ -23,7 +23,7 @@ import javax.annotation.Generated;
  * ApiError
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-17T15:14:54.925258+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-19T22:54:46.396694+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
 public class ApiError {
 
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

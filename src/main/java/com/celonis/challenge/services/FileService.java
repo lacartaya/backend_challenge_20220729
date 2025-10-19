@@ -40,16 +40,21 @@ public class FileService {
         return new ResponseEntity<>(new FileSystemResource(inputFile), respHeaders, HttpStatus.OK);
     }
 
-    public void storeResult(String taskId, URL url) throws IOException {
-        final var projectGenerationTask = projectGenerationTaskRepository.findById(taskId)
+    public void storeResult(String taskId, InputStream is, String filename) throws IOException {
+        final var task = projectGenerationTaskRepository.findById(taskId)
                 .orElseThrow(NotFoundException::new);
+
         final var outputFile = File.createTempFile(taskId, ".zip");
         outputFile.deleteOnExit();
-        projectGenerationTask.setStorageLocation(outputFile.getAbsolutePath());
-        projectGenerationTaskRepository.save(projectGenerationTask);
-        try (InputStream is = url.openStream();
-             OutputStream os = new FileOutputStream(outputFile)) {
+
+        try (OutputStream os = new FileOutputStream(outputFile)) {
             IOUtils.copy(is, os);
+        } catch (IOException e) {
+            throw new InternalException(e);
         }
+
+        task.setStorageLocation(outputFile.getAbsolutePath());
+        projectGenerationTaskRepository.save(task);
     }
+
 }

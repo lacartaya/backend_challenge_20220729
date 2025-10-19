@@ -5,10 +5,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.format.annotation.DateTimeFormat;
-import java.util.NoSuchElementException;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import javax.validation.Valid;
@@ -23,15 +20,17 @@ import javax.annotation.Generated;
  * Task
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-17T15:14:54.925258+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-19T22:54:46.396694+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
 public class Task {
 
   private String id;
 
+  private String name;
+
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime creationDate;
 
-  private JsonNullable<String> storageLocation = JsonNullable.<String>undefined();
+  private String storageLocation;
 
   public Task() {
     super();
@@ -65,6 +64,26 @@ public class Task {
     this.id = id;
   }
 
+  public Task name(String name) {
+    this.name = name;
+    return this;
+  }
+
+  /**
+   * Human-friendly task name.
+   * @return name
+  */
+  
+  @Schema(name = "name", example = "Generate Demo Project", description = "Human-friendly task name.", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name")
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
   public Task creationDate(OffsetDateTime creationDate) {
     this.creationDate = creationDate;
     return this;
@@ -86,7 +105,7 @@ public class Task {
   }
 
   public Task storageLocation(String storageLocation) {
-    this.storageLocation = JsonNullable.of(storageLocation);
+    this.storageLocation = storageLocation;
     return this;
   }
 
@@ -95,13 +114,13 @@ public class Task {
    * @return storageLocation
   */
   
-  @Schema(name = "storageLocation", example = "/var/tmp/a1b2c3.zip", description = "Absolute file path where the generated ZIP was stored (internal use).", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @Schema(name = "storageLocation", accessMode = Schema.AccessMode.READ_ONLY, example = "/var/tmp/a1b2c3.zip", description = "Absolute file path where the generated ZIP was stored (internal use).", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("storageLocation")
-  public JsonNullable<String> getStorageLocation() {
+  public String getStorageLocation() {
     return storageLocation;
   }
 
-  public void setStorageLocation(JsonNullable<String> storageLocation) {
+  public void setStorageLocation(String storageLocation) {
     this.storageLocation = storageLocation;
   }
 
@@ -115,24 +134,14 @@ public class Task {
     }
     Task task = (Task) o;
     return Objects.equals(this.id, task.id) &&
+        Objects.equals(this.name, task.name) &&
         Objects.equals(this.creationDate, task.creationDate) &&
-        equalsNullable(this.storageLocation, task.storageLocation);
-  }
-
-  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
-    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
+        Objects.equals(this.storageLocation, task.storageLocation);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate, hashCodeNullable(storageLocation));
-  }
-
-  private static <T> int hashCodeNullable(JsonNullable<T> a) {
-    if (a == null) {
-      return 1;
-    }
-    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
+    return Objects.hash(id, name, creationDate, storageLocation);
   }
 
   @Override
@@ -140,6 +149,7 @@ public class Task {
     StringBuilder sb = new StringBuilder();
     sb.append("class Task {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    storageLocation: ").append(toIndentedString(storageLocation)).append("\n");
     sb.append("}");
