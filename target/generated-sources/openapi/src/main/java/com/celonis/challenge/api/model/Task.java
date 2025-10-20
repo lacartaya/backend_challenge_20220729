@@ -20,7 +20,7 @@ import javax.annotation.Generated;
  * Task
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-20T01:19:26.360702+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-20T11:25:33.701831+02:00[Europe/Madrid]", comments = "Generator version: 7.6.0")
 public class Task {
 
   private String id;

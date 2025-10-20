@@ -1,19 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-
     <groupId>com.celonis</groupId>
-    <version>1.1-SNAPSHOT</version>
     <artifactId>challenge-java-broken</artifactId>
-
+    <version>1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <java.version>11</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>2.2.5.RELEASE</spring-boot.version>
         <commons-io.version>2.6</commons-io.version>
+        <surefire.version>3.2.5</surefire.version>
+        <pitest.version>1.16.1</pitest.version>
+        <pitest.junit5.version>1.2.1</pitest.junit5.version>
+        <openapi.generator.version>7.6.0</openapi.generator.version>
+        <build.helper.version>3.5.0</build.helper.version>
+        <enforcer.version>3.4.1</enforcer.version>
+        <jacoco.version>0.8.12</jacoco.version>
     </properties>
 
     <dependencyManagement>
@@ -29,6 +36,7 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Spring -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -37,6 +45,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
+        <!-- Utilidades -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -45,18 +55,22 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <scope>runtime</scope>
         </dependency>
+
+        <!-- OpenAPI / Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
             <version>1.7.0</version>
         </dependency>
-        <!-- Necesaria para org.openapitools.jackson.nullable.JsonNullable -->
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
             <version>0.2.6</version>
         </dependency>
+
+        <!-- Provided -->
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
@@ -76,62 +90,96 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
-                <configuration>
-                    <release>${java.version}</release>
-                    <encoding>UTF-8</encoding>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${enforcer.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[11,)</version>
+                                </requireJavaVersion>
+                                <dependencyConvergence/>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
-            <!-- Generar interfaces/DTOs desde openapi.yaml -->
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.6.0</version>
+                <version>${openapi.generator.version}</version>
                 <executions>
                     <execution>
                         <id>generate-spring-api</id>
-                        <goals><goal>generate</goal></goals>
                         <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/resources/openapi.yaml</inputSpec>
                             <generatorName>spring</generatorName>
-
                             <apiPackage>com.celonis.challenge.api</apiPackage>
                             <modelPackage>com.celonis.challenge.api.model</modelPackage>
                             <invokerPackage>com.celonis.challenge.api.invoker</invokerPackage>
-
                             <output>${project.build.directory}/generated-sources/openapi</output>
-
                             <configOptions>
                                 <interfaceOnly>true</interfaceOnly>
                                 <useTags>true</useTags>
                                 <delegatePattern>false</delegatePattern>
                                 <dateLibrary>java8</dateLibrary>
                                 <useSpringBoot3>false</useSpringBoot3>
-                                <!-- NO usar useJakartaEe en Boot 2.2.x -->
                             </configOptions>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
-
-            <!-- We include here the sources generated -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>${build.helper.version}</version>
                 <executions>
                     <execution>
                         <id>add-openapi-sources</id>
                         <phase>generate-sources</phase>
-                        <goals><goal>add-source</goal></goals>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
                         <configuration>
                             <sources>
                                 <source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
@@ -140,7 +188,86 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <!-- Compilación -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <release>${java.version}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <!-- Tests unitarios con JUnit 5 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                    <!-- uncomment if you want to fail if no test in place -->
+                    <!-- <failIfNoTests>true</failIfNoTests> -->
+                </configuration>
+            </plugin>
+            <!-- PIT: mutation + cobertura. when execute 'verify' just for pipeline uses -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>${pitest.version}</version>
+                <configuration>
+                    <targetClasses>
+                        <param>com.celonis.challenge.controllers.*</param>
+                        <param>com.celonis.challenge.services.*</param>
+                        <param>com.celonis.challenge.jobs.*</param>
+                        <param>com.celonis.challenge.security.*</param>
+                        <param>com.celonis.challenge.mappers.*</param>
+                        <param>com.celonis.challenge.model.*</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.celonis.challenge.*</param>
+                    </targetTests>
+                    <useClasspathJar>true</useClasspathJar>
+                    <jvmArgs>
+                        <jvmArg>-Xmx1g</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</jvmArg>
+                    </jvmArgs>
+                    <excludedClasses>
+                        <param>com.celonis.challenge.api.model.*</param>
+                        <param>com.celonis.challenge.configuration.*</param>
+                        <param>com.celonis.challenge.*.*Config*</param>
+                        <param>com.celonis.challenge.*.*Application*</param>
+                        <param>com.celonis.challenge.repository.*</param>
+                    </excludedClasses>
+                    <mutators>
+                        <mutator>DEFAULTS</mutator>
+                    </mutators>
+                    <mutationThreshold>47</mutationThreshold>
+                    <coverageThreshold>57</coverageThreshold>
+                    <threads>1</threads>
+                    <timestampedReports>false</timestampedReports>
+                    <excludedTestClasses>
+                        <param>**.*IT</param>
+                        <param>**.*IntegrationTest</param>
+                    </excludedTestClasses>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pitest</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>mutationCoverage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>${pitest.junit5.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 </project>
